@@ -48,8 +48,8 @@ ${resumeText}`;
 
     const data = await response.json();
     const textContent = data.candidates[0].content.parts[0].text;
-    const extracted = JSON.parse(textContent);
-
+    const cleanJson = textContent.replace(/```json\n?|\n?```/g, '').trim();
+    const extracted = JSON.parse(cleanJson);
     return res.status(200).json(extracted);
   } catch (error) {
     console.error('Resume extraction error:', error);
