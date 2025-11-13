@@ -10,6 +10,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'No resume text provided' });
   }
 
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY environment variable is not set');
+    return res.status(500).json({ error: 'API key not configured' });
+  }
+
   try {
     const prompt = `Extract comprehensive career information from this resume. Return ONLY valid JSON (no markdown):
 {
@@ -27,7 +33,7 @@ ${resumeText}`;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": process.env.GEMINI_API_KEY
+        "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }]
@@ -35,6 +41,8 @@ ${resumeText}`;
     });
 
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API error:', errorData);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
