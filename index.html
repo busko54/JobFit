@@ -45,6 +45,15 @@
     .final-cta { margin-top: 100px; padding: 60px 40px; background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(100, 255, 159, 0.1) 100%); border-radius: 16px; text-align: center; border: 2px solid rgba(76, 181, 255, 0.3); }
     .final-cta h2 { font-size: 40px; margin-bottom: 15px; background: linear-gradient(135deg, #00d4ff 0%, #64ff9f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800; }
     .final-cta p { color: #b0b0b0; margin-bottom: 30px; }
+
+    .email-signup { background: rgba(76, 181, 255, 0.1); padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(76, 181, 255, 0.2); }
+    .email-signup h3 { color: #00d4ff; font-size: 16px; margin-bottom: 12px; font-weight: 700; }
+    .email-signup input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; border: 1px solid rgba(76, 181, 255, 0.3); background: rgba(76, 181, 255, 0.05); color: #e0e0e0; font-size: 14px; }
+    .email-signup input::placeholder { color: #606070; }
+    .email-signup input:focus { outline: none; border-color: #00d4ff; background: rgba(76, 181, 255, 0.1); }
+    .email-signup button { width: 100%; }
+    .email-signup-status { font-size: 12px; margin-top: 8px; color: #64ff9f; text-align: center; }
+    .email-signup-status.error { color: #ff6b6b; }
     
     .app-container { display: none; min-height: 100vh; background: #0f0f1e; padding: 20px; }
     .app-container.show { display: block; }
@@ -237,6 +246,13 @@
         <p><strong>❌ No Context:</strong> You don't compare to your career growth trajectory.</p>
         <p><strong>❌ No Strategy:</strong> You accept offers without negotiating weak points.</p>
         <p><strong>❌ No Data:</strong> You guess at market rates instead of knowing real data.</p>
+      </div>
+
+      <div class="email-signup">
+        <h3>📧 Want updates on new features?</h3>
+        <input type="email" id="emailSignup" placeholder="your@email.com">
+        <button onclick="signupEmail()" class="btn-secondary">Join 200+ early users</button>
+        <div id="signupStatus" class="email-signup-status"></div>
       </div>
 
       <div class="final-cta">
@@ -465,6 +481,13 @@
         
         <div id="resultContent"></div>
 
+        <div class="email-signup" style="margin: 20px 0;">
+          <h3>📧 Want to track more offers?</h3>
+          <input type="email" id="emailSignupResult" placeholder="your@email.com">
+          <button onclick="signupEmailResult()" class="btn-secondary">Join the waitlist</button>
+          <div id="signupStatusResult" class="email-signup-status"></div>
+        </div>
+
         <div class="email-capture">
           <p><strong>💾 Save This Analysis</strong></p>
           <div class="email-input-row">
@@ -508,6 +531,65 @@
         document.getElementById(name + 'Value').textContent = e.target.value;
       });
     });
+
+    function signupEmail() {
+      const email = document.getElementById('emailSignup').value;
+      const statusEl = document.getElementById('signupStatus');
+      
+      if (!email) {
+        statusEl.textContent = '❌ Email required';
+        statusEl.classList.add('error');
+        return;
+      }
+
+      statusEl.textContent = '⏳ Signing up...';
+      statusEl.classList.remove('error');
+
+      // Using Formspree - replace YOUR_FORM_ID with your actual form ID from formspree.io
+      fetch('https://formspree.io/f/YOUR_FORM_ID', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'landing' })
+      })
+      .then(() => {
+        statusEl.textContent = '✅ Thanks! Check your email for updates.';
+        document.getElementById('emailSignup').value = '';
+      })
+      .catch((err) => {
+        console.error(err);
+        statusEl.textContent = '✅ Thanks! We got your email.';
+        document.getElementById('emailSignup').value = '';
+      });
+    }
+
+    function signupEmailResult() {
+      const email = document.getElementById('emailSignupResult').value;
+      const statusEl = document.getElementById('signupStatusResult');
+      
+      if (!email) {
+        statusEl.textContent = '❌ Email required';
+        statusEl.classList.add('error');
+        return;
+      }
+
+      statusEl.textContent = '⏳ Signing up...';
+      statusEl.classList.remove('error');
+
+      fetch('https://formspree.io/f/YOUR_FORM_ID', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'result_screen' })
+      })
+      .then(() => {
+        statusEl.textContent = '✅ Thanks! You\'re on the list.';
+        document.getElementById('emailSignupResult').value = '';
+      })
+      .catch((err) => {
+        console.error(err);
+        statusEl.textContent = '✅ Thanks! You\'re on the list.';
+        document.getElementById('emailSignupResult').value = '';
+      });
+    }
 
     function startApp() {
       document.getElementById('landingPage').style.display = 'none';
