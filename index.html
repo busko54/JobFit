@@ -619,12 +619,15 @@
     </div>
   </div>
 
-  <script>
+ <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     
     let resumeData = null;
     let decisions = [];
     let lastAnalysis = null;
+
+    // Initialize analysis count from localStorage
+    let analysisCount = parseInt(localStorage.getItem('offerfit_analysisCount') || '0');
 
     ['prioritySalary', 'priorityBalance', 'priorityGrowth', 'priorityStability', 'priorityRemote', 'priorityBrand'].forEach(id => {
       document.getElementById(id).addEventListener('input', (e) => {
@@ -852,81 +855,89 @@
     }
 
     async function analyzeOffer() {
-      const currentSalary = parseInt(document.getElementById('currentSalary').value);
-      const baseSalary = parseInt(document.getElementById('baseSalary').value);
-      const jobTitle = document.getElementById('jobTitle').value;
-      const company = document.getElementById('company').value;
-      showPaymentModal();
+  const currentSalary = parseInt(document.getElementById('currentSalary').value);
+  const baseSalary = parseInt(document.getElementById('baseSalary').value);
+  const jobTitle = document.getElementById('jobTitle').value;
+  const company = document.getElementById('company').value;
 
-      if (!baseSalary || !jobTitle || !company) {
-        alert('Please fill in job title, company, and salary');
-        return;
-      }
+  if (!baseSalary || !jobTitle || !company) {
+    alert('Please fill in job title, company, and salary');
+    return;
+  }
 
-      // Track the event
-      gtag('event', 'analyze_offer_clicked', {
-        'job_title': jobTitle,
-        'company': company,
-        'salary': baseSalary
-      });
+  // If this is the SECOND analysis or later, show payment modal
+  if (analysisCount > 0) {
+    showPaymentModal();
+    return;  // Stop here, user needs to pay
+  }
 
-      const btn = document.getElementById('analyzeBtn');
-      btn.textContent = '⏳ AI Analyzing...';
-      btn.disabled = true;
+  // First analysis is FREE - continue
+  analysisCount++;
+  localStorage.setItem('offerfit_analysisCount', analysisCount);  // Save to localStorage
 
-      const profile = {
-        currentJobTitle: document.getElementById('currentJobTitle').value,
-        currentSalary,
-        currentHours: parseInt(document.getElementById('currentHours').value),
-        yearsExp: parseInt(document.getElementById('yearsExp').value),
-        currentCompanySize: document.getElementById('currentCompanySize').value,
-        priority_salary: parseInt(document.getElementById('prioritySalary').value),
-        priority_balance: parseInt(document.getElementById('priorityBalance').value),
-        priority_growth: parseInt(document.getElementById('priorityGrowth').value),
-        priority_stability: parseInt(document.getElementById('priorityStability').value),
-        priority_remote: parseInt(document.getElementById('priorityRemote').value),
-        priority_brand: parseInt(document.getElementById('priorityBrand').value),
-        resumeData: resumeData ? resumeData.text.substring(0, 2000) : null
-      };
+  gtag('event', 'analyze_offer_clicked', {
+    'job_title': jobTitle,
+    'company': company,
+    'salary': baseSalary
+  });
 
-      const job = {
-        jobTitle,
-        company,
-        baseSalary,
-        equity: document.getElementById('equity').value,
-        bonus: document.getElementById('bonus').value,
-        hoursPerWeek: parseInt(document.getElementById('hoursPerWeek').value),
-        workEnv: document.getElementById('workEnv').value,
-        fundingStage: document.getElementById('fundingStage').value,
-        teamSize: parseInt(document.getElementById('teamSize').value),
-        industry: document.getElementById('industry').value,
-        concerns: document.getElementById('concerns').value
-      };
+  const btn = document.getElementById('analyzeBtn');
+  btn.textContent = '⏳ AI Analyzing...';
+  btn.disabled = true;
 
-      try {
-        const response = await fetch("/api/analyze-offer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profile, job })
-        });
+  const profile = {
+    currentJobTitle: document.getElementById('currentJobTitle').value,
+    currentSalary,
+    currentHours: parseInt(document.getElementById('currentHours').value),
+    yearsExp: parseInt(document.getElementById('yearsExp').value),
+    currentCompanySize: document.getElementById('currentCompanySize').value,
+    priority_salary: parseInt(document.getElementById('prioritySalary').value),
+    priority_balance: parseInt(document.getElementById('priorityBalance').value),
+    priority_growth: parseInt(document.getElementById('priorityGrowth').value),
+    priority_stability: parseInt(document.getElementById('priorityStability').value),
+    priority_remote: parseInt(document.getElementById('priorityRemote').value),
+    priority_brand: parseInt(document.getElementById('priorityBrand').value),
+    resumeData: resumeData ? resumeData.text.substring(0, 2000) : null
+  };
 
-        if (!response.ok) throw new Error('API error');
-        const aiAnalysis = await response.json();
-        const salaryData = getSalaryData(jobTitle);
-        
-        decisions.push({ ...aiAnalysis, job, profile, salaryData, timestamp: new Date().toLocaleString() });
-        displayResult(aiAnalysis, salaryData, job, profile);
-        showScreen('resultScreen');
-        
-        showFeedbackTab();
-      } catch (error) {
-        console.error('Analysis error:', error);
-        alert('Error during analysis. Please try again.');
-      } finally {
-        btn.textContent = 'Analyze This Offer';
-        btn.disabled = false;
-      }
-    }
+  const job = {
+    jobTitle,
+    company,
+    baseSalary,
+    equity: document.getElementById('equity').value,
+    bonus: document.getElementById('bonus').value,
+    hoursPerWeek: parseInt(document.getElementById('hoursPerWeek').value),
+    workEnv: document.getElementById('workEnv').value,
+    fundingStage: document.getElementById('fundingStage').value,
+    teamSize: parseInt(document.getElementById('teamSize').value),
+    industry: document.getElementById('industry').value,
+    concerns: document.getElementById('concerns').value
+  };
+
+  try {
+    const response = await fetch("/api/analyze-offer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile, job })
+    });
+
+    if (!response.ok) throw new Error('API error');
+    const aiAnalysis = await response.json();
+    const salaryData = getSalaryData(jobTitle);
+    
+    decisions.push({ ...aiAnalysis, job, profile, salaryData, timestamp: new Date().toLocaleString() });
+    displayResult(aiAnalysis, salaryData, job, profile);
+    showScreen('resultScreen');
+    
+    showFeedbackTab();
+  } catch (error) {
+    console.error('Analysis error:', error);
+    alert('Error during analysis. Please try again.');
+  } finally {
+    btn.textContent = 'Analyze This Offer';
+    btn.disabled = false;
+  }
+}
 
     function getSalaryData(jobTitle) {
       // Try to get real BLS data, fallback to estimates if API fails
